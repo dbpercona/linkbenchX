@@ -1,9 +1,12 @@
 LinkBenchX Overview
 ====================
-LinkBench is a database benchmark based on LinkBench (see https://github.com/facebook/linkbench or below).
+LinkBench is a database benchmark based on LinkBench (see https://github.com/facebook/linkbench or below https://github.com/vadimtk/linkbenchX/blob/master/README.md#linkbench-overview).
 
 The difference from the LinkBench is:
 - Instead of generating events in a loop, we generate events with *requestrate* and send the event for execution to one of available *Requester thread*
+- At the start we establish N (*requesters*) connections to database, which are idle by default, and just waiting for an incoming event to execute
+- The main output of the benchmark is 99% response time for ADD_LINK (INSERT + UPDATE request) and GET_LINKS_LIST (range SELECT request) operations.
+- Related output is *Concurrency*, that is how many *Requester threads* are active during time period
 
 developed to evaluate database
 performance for workloads similar to those of Facebook's production MySQL deployment.
