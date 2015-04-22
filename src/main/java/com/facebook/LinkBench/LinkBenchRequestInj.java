@@ -811,19 +811,6 @@ public class LinkBenchRequestInj implements Runnable {
       }
     }
 
-    // Do final update of statistics
-    //progressTracker.update(requestsSinceLastUpdate);
-    //displayStats(lastStatDisplay_ms, System.currentTimeMillis());
-
-    // Report final stats
-    logger.info("ThreadID = " + requesterID +
-                       " total requests = " + requestsDone +
-                       " requests/second = " + ((1000 * requestsDone)/
-                                                Math.max(1, (curTime - benchmarkStartTime))) +
-                       " found = " + numfound +
-                       " not found = " + numnotfound +
-                       " history queries = " + numHistoryQueries + "/" +
-                                   stats.getCount(LinkBenchOp.GET_LINKS_LIST));
     closeStores();
   }
 

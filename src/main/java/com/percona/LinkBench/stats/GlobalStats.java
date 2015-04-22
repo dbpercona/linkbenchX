@@ -140,6 +140,40 @@ public class GlobalStats implements Runnable  {
     return this.numops[type.ordinal()];
   }
 
+  private void printStats() {
+
+	  synchronized(lockQueue) {
+		  for (LinkBenchOp type: LinkBenchOp.values()) {
+			  Collections.sort(samples[type.ordinal()]);
+			  long maxTime=0;
+			  long tm95th = 0;
+			  long tm99th = 0;
+			  int sz = samples[type.ordinal()].size();
+			  if (sz > 0 ) {
+				  maxTime = samples[type.ordinal()].get(sz-1);
+				  tm95th = samples[type.ordinal()].get(Math.max(sz*95/100,1)-1);
+				  tm99th = samples[type.ordinal()].get(Math.max(sz*99/100,1)-1);
+			  }
+			  if ( (type == LinkBenchOp.ADD_LINK) || (type == LinkBenchOp.GET_LINKS_LIST) ) {
+				  logger.info("Type: " + type.name() + ", count: " + samples[type.ordinal()].size()+
+						  " MaxTime: "+maxTime+", 95th: "+ tm95th +", 99th: "+tm99th);
+			  }
+			  samples[type.ordinal()].clear();
+
+			  //opsSinceReset[type.ordinal()] = 0;
+		  }
+		  int maxConc = 0;
+		  if (concArray.size() > 0 ) {
+			  Collections.sort(concArray);
+			  maxConc = concArray.get(Math.max(concArray.size()*99/100,1)-1);
+		  }
+		  logger.info("Concurrency: count: " + concArray.size()+
+				  " 99% concurrency: "+maxConc);
+		  concArray.clear();
+	  }
+
+  }
+
   @Override
   public void run() {
     logger.info("Global stats thread started");
@@ -153,39 +187,12 @@ public class GlobalStats implements Runnable  {
 		    try {	
 			    while ( true ) {
 				    Thread.sleep(5000);
-				    synchronized(lockQueue) {
-					    for (LinkBenchOp type: LinkBenchOp.values()) {
-						    Collections.sort(samples[type.ordinal()]);
-						    long maxTime=0;
-						    long tm95th = 0;
-						    long tm99th = 0;
-						    int sz = samples[type.ordinal()].size();
-						    if (sz > 0 ) {
-							    maxTime = samples[type.ordinal()].get(sz-1);
-							    tm95th = samples[type.ordinal()].get(Math.max(sz*95/100,1)-1);
-							    tm99th = samples[type.ordinal()].get(Math.max(sz*99/100,1)-1);
-						    }
-						    if ( (type == LinkBenchOp.ADD_LINK) || (type == LinkBenchOp.GET_LINKS_LIST) ) {
-							    logger.info("Type: " + type.name() + ", count: " + samples[type.ordinal()].size()+
-									    " MaxTime: "+maxTime+", 95th: "+ tm95th +", 99th: "+tm99th);
-						    }
-						    samples[type.ordinal()].clear();
-
-						    //opsSinceReset[type.ordinal()] = 0;
-					    }
-					    int maxConc = 0;
-					    if (concArray.size() > 0 ) {
-						    Collections.sort(concArray);
-						    maxConc = concArray.get(Math.max(concArray.size()*99/100,1)-1);
-					    }
-					    logger.info("Concurrency: count: " + concArray.size()+
-							    " 99% concurrency: "+maxConc);
-					    concArray.clear();
-				    }
+					printStats();
 				    //logger.info("Received message: " + timeRequest.type.displayName() + ", time: " 
 			    }
 		    } catch (InterruptedException e) {
-			    e.printStackTrace();
+				printStats();
+				logger.info("Thread Interrupted");
 		    }
 	    }
 
@@ -193,23 +200,24 @@ public class GlobalStats implements Runnable  {
 
     threadPrinter.start();
     
-    while ( true ) {
-	// wait on incoming message
-      try {
-	StatMessage timeRequest = statsQueue.take();
-        //                        long now = System.nanoTime();
-        //                        long time = (now - t) / 1000; // Divide by 1000 to get result in microseconds
-	if (timeRequest == null ) {
-		continue;
+	while ( true ) {
+		// wait on incoming message
+		try {
+			StatMessage timeRequest = statsQueue.take();
+			//                        long now = System.nanoTime();
+			//                        long time = (now - t) / 1000; // Divide by 1000 to get result in microseconds
+			if (timeRequest == null ) {
+				continue;
+			}
+			addStats(timeRequest.type, timeRequest.execTime, false, timeRequest.concurrency);
+			//logger.info("Received message: " + timeRequest.type.displayName() + ", time: " 
+			// 		+ timeRequest.execTime);
+		} catch (InterruptedException e) {
+			logger.info("Thread Interrupted");
+			break;
+		}
 	}
-	addStats(timeRequest.type, timeRequest.execTime, false, timeRequest.concurrency);
-	//logger.info("Received message: " + timeRequest.type.displayName() + ", time: " 
-	// 		+ timeRequest.execTime);
-      } catch (Throwable e) {
-        logger.error("Error " + e.getMessage(), e);
-        break;
-      }
-   }
+	threadPrinter.interrupt();
   }
 
 }

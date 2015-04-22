@@ -405,6 +405,9 @@ public class LinkBenchDriverInj {
     progress.startTimer();
     // run requesters
     concurrentExec(requesters, true, new Random(masterRandom.nextLong()));
+    
+    // stop Thread with global statistics
+    t.interrupt();
 
     long finishTime = System.currentTimeMillis();
     // Calculate duration accounting for warmup time
@@ -484,6 +487,8 @@ public class LinkBenchDriverInj {
 			    //	    System.out.println("Request time: "+System.currentTimeMillis());
 			    genQueue.put(System.nanoTime());
 		    }
+
+			// Send stop signal to all requesters
 		    for (int i=0; i< nrequesters; i++) {
 			    genQueue.put((long)0);
 		    }
