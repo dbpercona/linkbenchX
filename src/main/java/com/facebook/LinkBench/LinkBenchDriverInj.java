@@ -640,7 +640,7 @@ public class LinkBenchDriverInj {
         csvStreamFile = new PrintStream(
                         new FileOutputStream(csvStreamFileName));
         // File is written to by multiple threads, first write header
-        SampledStats.writeCSVHeader(csvStreamFile);
+        GlobalStats.writeCSVHeader(csvStreamFile);
       } catch (FileNotFoundException e) {
         System.err.println("Could not open file " + csvStreamFileName +
                            " for writing");

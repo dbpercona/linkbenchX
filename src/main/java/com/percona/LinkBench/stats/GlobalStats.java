@@ -128,9 +128,8 @@ public class GlobalStats implements Runnable  {
    * @param out
    */
   public static void writeCSVHeader(PrintStream out) {
-    out.println("threadID,timestamp,op,totalops,totalerrors,ops," +
-            "sampleDuration_us,sampleOps,mean_us,min_us,p25_us,p50_us," +
-            "p75_us,p90_us,p95_us,p99_us,max_us");
+    out.println("timestamp,op,totalops,concurrency," +
+            "max_us,p95_us,p99_us");
   }
 
   /**
@@ -142,7 +141,19 @@ public class GlobalStats implements Runnable  {
 
   private void printStats() {
 
+      long timestamp = System.currentTimeMillis() / 1000;
+
 	  synchronized(lockQueue) {
+
+		  int maxConc = 0;
+		  if (concArray.size() > 0 ) {
+			  Collections.sort(concArray);
+			  maxConc = concArray.get(Math.max(concArray.size()*99/100,1)-1);
+		  }
+		  logger.info("Concurrency: count: " + concArray.size()+
+				  " 99% concurrency: "+maxConc);
+		  concArray.clear();
+
 		  for (LinkBenchOp type: LinkBenchOp.values()) {
 			  Collections.sort(samples[type.ordinal()]);
 			  long maxTime=0;
@@ -156,20 +167,18 @@ public class GlobalStats implements Runnable  {
 			  }
 			  if ( (type == LinkBenchOp.ADD_LINK) || (type == LinkBenchOp.GET_LINKS_LIST) ) {
 				  logger.info("Type: " + type.name() + ", count: " + samples[type.ordinal()].size()+
-						  " MaxTime: "+maxTime+", 95th: "+ tm95th +", 99th: "+tm99th);
+						  ", conc: "+maxConc+", Time max: "+maxTime+", 95th: "+ tm95th +", 99th: "+tm99th);
+				  if (csvOutput != null) {
+					  csvOutput.println(timestamp + "," + type.name() +
+							  "," + samples[type.ordinal()].size() + "," + maxConc +
+							  "," + maxTime + "," + tm95th +
+							  "," + tm99th);
+				  }
 			  }
 			  samples[type.ordinal()].clear();
 
 			  //opsSinceReset[type.ordinal()] = 0;
 		  }
-		  int maxConc = 0;
-		  if (concArray.size() > 0 ) {
-			  Collections.sort(concArray);
-			  maxConc = concArray.get(Math.max(concArray.size()*99/100,1)-1);
-		  }
-		  logger.info("Concurrency: count: " + concArray.size()+
-				  " 99% concurrency: "+maxConc);
-		  concArray.clear();
 	  }
 
   }
