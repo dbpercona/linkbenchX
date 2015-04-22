@@ -603,9 +603,9 @@ public class LinkBenchRequestInj implements Runnable {
         }
 
         int count = ((links == null) ? 0 : links.length);
-        if (recordStats) {
-	  statQueue.offer(new StatMessage(count, 0, LinkBenchOp.RANGE_SIZE));
-        }
+        //if (recordStats) {
+		//	statQueue.offer(new StatMessage(count, 0, LinkBenchOp.RANGE_SIZE));
+        //}
       } else if (r <= pc_addnode) {
         type = LinkBenchOp.ADD_NODE;
         Node newNode = createAddNode();
