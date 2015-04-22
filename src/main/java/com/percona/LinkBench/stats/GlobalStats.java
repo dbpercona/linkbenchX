@@ -162,8 +162,8 @@ public class GlobalStats implements Runnable  {
 			  Collections.sort(concArray);
 			  maxConc = concArray.get(Math.max(concArray.size()*99/100,1)-1);
 		  }
-		  logger.info("Concurrency: count: " + concArray.size()+
-				  " 99% concurrency: "+maxConc);
+		  logger.info("Events: " + concArray.size()+
+				  ", 99% concurrency: "+maxConc);
 		  concArray.clear();
 
 		  for (LinkBenchOp type: LinkBenchOp.values()) {
