@@ -1,3 +1,18 @@
+LinkBenchX Overview
+====================
+LinkBench is a database benchmark based on LinkBench (see https://github.com/facebook/linkbench or below).
+
+The difference from the LinkBench is:
+- Instead of generating events in a loop, we generate events with *requestrate* and send the event for execution to one of available *Requester thread*
+
+developed to evaluate database
+performance for workloads similar to those of Facebook's production MySQL deployment.
+LinkBench is highly configurable and extensible.  It can be reconfigured
+to simulate a variety of workloads and plugins can be written for
+benchmarking additional database systems.
+
+LinkBench is released under the Apache License, Version 2.0.
+
 LinkBench Overview
 ====================
 LinkBench is a database benchmark developed to evaluate database
