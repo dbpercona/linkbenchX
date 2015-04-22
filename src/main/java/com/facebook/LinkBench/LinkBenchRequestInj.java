@@ -798,8 +798,8 @@ public class LinkBenchRequestInj implements Runnable {
         lastStatDisplay_ms = curTime;
         requestsSinceLastUpdate = 0;
         logger.info(String.format("Requester #%d warmup finished " +
-            " after %d warmup requests.  0/%d requests done",
-            requesterID, warmupRequests, numRequests));
+            " after %d warmup requests.",
+            requesterID, warmupRequests));
         lastUpdate = curTime;
       }
 
