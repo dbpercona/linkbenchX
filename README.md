@@ -8,12 +8,6 @@ The difference from the LinkBench is:
 - The main output of the benchmark is 99% response time for ADD_LINK (INSERT + UPDATE request) and GET_LINKS_LIST (range SELECT request) operations.
 - Related output is *Concurrency*, that is how many *Requester threads* are active during time period
 
-developed to evaluate database
-performance for workloads similar to those of Facebook's production MySQL deployment.
-LinkBench is highly configurable and extensible.  It can be reconfigured
-to simulate a variety of workloads and plugins can be written for
-benchmarking additional database systems.
-
 LinkBench is released under the Apache License, Version 2.0.
 
 LinkBench Overview
