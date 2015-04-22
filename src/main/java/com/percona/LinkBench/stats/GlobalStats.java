@@ -22,11 +22,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 import java.util.ArrayList;
+import java.util.Properties;
+
 import java.lang.Math;
 
 import org.apache.log4j.Logger;
 
 import com.facebook.LinkBench.ConfigUtil;
+import com.facebook.LinkBench.Config;
 import com.facebook.LinkBench.LinkBenchOp;
 import com.facebook.LinkBench.LinkStore;
 
@@ -87,9 +90,16 @@ public class GlobalStats implements Runnable  {
   /** Queue we use to get messages from Request thread */
   private BlockingQueue<StatMessage> statsQueue;
 
-  public GlobalStats(BlockingQueue<StatMessage> statsQ, PrintStream csvOutput) {
+  /** time period to print current results */
+  long displayFreq_ms;
+
+  Properties props;
+
+  public GlobalStats(BlockingQueue<StatMessage> statsQ, Properties props, PrintStream csvOutput) {
+
     this.csvOutput = csvOutput;
     this.statsQueue = statsQ;
+    this.props = props;
 
     concArray = new ArrayList<Integer>();
 
@@ -107,6 +117,8 @@ public class GlobalStats implements Runnable  {
     errors = new long[LinkStore.MAX_OPTYPES];
 */
     rng = new Random();
+
+    displayFreq_ms = ConfigUtil.getLong(props, Config.DISPLAY_FREQ, 60L) * 1000;
 
   }
 
@@ -167,7 +179,7 @@ public class GlobalStats implements Runnable  {
 			  }
 			  if ( (type == LinkBenchOp.ADD_LINK) || (type == LinkBenchOp.GET_LINKS_LIST) ) {
 				  logger.info("Type: " + type.name() + ", count: " + samples[type.ordinal()].size()+
-						  ", conc: "+maxConc+", Time max: "+maxTime+", 95th: "+ tm95th +", 99th: "+tm99th);
+						  ", conc: "+maxConc+", Time(us) max: "+maxTime+", 95th: "+ tm95th +", 99th: "+tm99th);
 				  if (csvOutput != null) {
 					  csvOutput.println(timestamp + "," + type.name() +
 							  "," + samples[type.ordinal()].size() + "," + maxConc +
@@ -195,7 +207,7 @@ public class GlobalStats implements Runnable  {
 
 		    try {	
 			    while ( true ) {
-				    Thread.sleep(5000);
+				    Thread.sleep(displayFreq_ms);
 					printStats();
 				    //logger.info("Received message: " + timeRequest.type.displayName() + ", time: " 
 			    }

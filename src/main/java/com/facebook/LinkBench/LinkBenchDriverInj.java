@@ -391,7 +391,7 @@ public class LinkBenchDriverInj {
 
     // create GlobalStats thread
 
-    Thread t = new Thread(new GlobalStats(statsQueue, csvStreamFile), "Global Stats Thread");
+    Thread t = new Thread(new GlobalStats(statsQueue, props, csvStreamFile), "Global Stats Thread");
     t.start();
 
     // create requesters
