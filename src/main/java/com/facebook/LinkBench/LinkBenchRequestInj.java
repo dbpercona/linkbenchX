@@ -65,14 +65,12 @@ public class LinkBenchRequestInj implements Runnable {
   private long warmupTime;
 
   /** Maximum time to run benchmark for, not including warmup time */
-  long maxTime;
   int nrequesters;
   int requesterID;
   long maxid1;
   long startid1;
   Level debuglevel;
   long displayFreq_ms;
-  long progressFreq_ms;
   String dbid;
   boolean singleAssoc = false;
 
@@ -213,7 +211,6 @@ public class LinkBenchRequestInj implements Runnable {
     dbid = ConfigUtil.getPropertyRequired(props, Config.DBID);
     maxFailedRequests = ConfigUtil.getLong(props,  Config.MAX_FAILED_REQUESTS, 0L);
     warmupTime = Math.max(0, ConfigUtil.getLong(props, Config.WARMUP_TIME, 0L));
-    maxTime = ConfigUtil.getLong(props, Config.MAX_TIME);
     maxid1 = ConfigUtil.getLong(props, Config.MAX_ID);
     startid1 = ConfigUtil.getLong(props, Config.MIN_ID);
 
@@ -245,7 +242,6 @@ public class LinkBenchRequestInj implements Runnable {
     }
 
     displayFreq_ms = ConfigUtil.getLong(props, Config.DISPLAY_FREQ, 60L) * 1000;
-    progressFreq_ms = ConfigUtil.getLong(props, Config.PROGRESS_FREQ, 6L) * 1000;
     int maxsamples = ConfigUtil.getInt(props, Config.MAX_STAT_SAMPLES);
     stats = new SampledStats(requesterID, maxsamples, csvStreamOut);
 
@@ -740,7 +736,6 @@ public class LinkBenchRequestInj implements Runnable {
     } else {
       benchmarkStartTime = warmupStartTime;
     }
-    long endTime = benchmarkStartTime + maxTime * 1000;
     long lastUpdate = warmupStartTime;
     long curTime = warmupStartTime;
 
@@ -750,66 +745,60 @@ public class LinkBenchRequestInj implements Runnable {
     long requestsSinceLastUpdate = 0;
     long lastStatDisplay_ms = curTime;
 
-    while ( true ) {
-	// wait on incoming message
-      long timeRequest = 0;
-      try {
-	// wait for event in queue. Events are generated in Driver
-	timeRequest = genQueue.take();
+	while ( true ) {
+		// wait on incoming message
+		long timeRequest = 0;
+		try {
+			// wait for event in queue. Events are generated in Driver
+			timeRequest = genQueue.take();
 
-      } catch (Throwable e) {
-        logger.error("Error " + e.getMessage(), e);
-      }
+		} catch (Throwable e) {
+			logger.error("Error " + e.getMessage(), e);
+		}
 
-      // 0 is an indication to stop
-      if (timeRequest == 0) {
-	break; // exit execution loop
-      }
+		// 0 is an indication to stop
+		if (timeRequest == 0) {
+			break; // exit execution loop
+		}
 
-      boolean success = oneRequest(warmupDone);
-      if (!success) {
-        errors++;
-        if (maxFailedRequests >= 0 && errors > maxFailedRequests) {
-          logger.error(String.format("Requester #%d aborting: %d failed requests" +
-              " (out of %d total) ", requesterID, errors, requestsDone));
-          aborted = true;
-          break;
-        }
-      }
+		boolean success = oneRequest(warmupDone);
+		if (!success) {
+			errors++;
+			if (maxFailedRequests >= 0 && errors > maxFailedRequests) {
+				logger.error(String.format("Requester #%d aborting: %d failed requests" +
+							" (out of %d total) ", requesterID, errors, requestsDone));
+				aborted = true;
+				break;
+			}
+		}
 
-      curTime = System.currentTimeMillis();
+		curTime = System.currentTimeMillis();
 
-      // Track requests done
-      if (warmupDone) {
-        requestsDone++;
-        requestsSinceLastUpdate++;
-        //if (requestsSinceLastUpdate >= RequestProgress.THREAD_REPORT_INTERVAL) {
-        //  progressTracker.update(requestsSinceLastUpdate);
-        //  requestsSinceLastUpdate = 0;
-        //}
-      } else {
-        warmupRequests++;
-      }
+		// Track requests done
+		if (warmupDone) {
+			requestsDone++;
+			requestsSinceLastUpdate++;
+			//if (requestsSinceLastUpdate >= RequestProgress.THREAD_REPORT_INTERVAL) {
+			//  progressTracker.update(requestsSinceLastUpdate);
+			//  requestsSinceLastUpdate = 0;
+			//}
+		} else {
+			warmupRequests++;
+		}
 
-      // Check if warmup completed
-      if (!warmupDone && curTime >= benchmarkStartTime) {
-        warmupDone = true;
-        lastUpdate = curTime;
-        lastStatDisplay_ms = curTime;
-        requestsSinceLastUpdate = 0;
-        logger.info(String.format("Requester #%d warmup finished " +
-            " after %d warmup requests.",
-            requesterID, warmupRequests));
-        lastUpdate = curTime;
-      }
+		// Check if warmup completed
+		if (!warmupDone && curTime >= benchmarkStartTime) {
+			warmupDone = true;
+			lastUpdate = curTime;
+			lastStatDisplay_ms = curTime;
+			requestsSinceLastUpdate = 0;
+			logger.info(String.format("Requester #%d warmup finished " +
+						" after %d warmup requests.",
+						requesterID, warmupRequests));
+			lastUpdate = curTime;
+		}
 
-      // Enforce time limit
-      if (curTime > endTime) {
-        logger.info(String.format("Requester #%d: time limit of %ds elapsed" +
-              ", shutting down.", requesterID, maxTime));
-        break;
-      }
-    }
+	}
 
     closeStores();
   }
