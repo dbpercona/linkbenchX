@@ -8,7 +8,16 @@ The difference from the LinkBench is:
 - The main output of the benchmark is 99% response time for ADD_LINK (INSERT + UPDATE request) and GET_LINKS_LIST (range SELECT request) operations.
 - Related output is *Concurrency*, that is how many *Requester threads* are active during time period
 
-LinkBench is released under the Apache License, Version 2.0.
+Cheat Sheet How To Use
+----------------------
+
+1. Prepare a config file: make copy or edit  `config/LinkConfigMysql.properties` 
+2. Create database `linkdb`
+3. Create tables: `mysql linkdb < sql/create_innodb.sql`
+4. Load data
+
+      `./bin/linkbench -c config/LinkConfigMysql.properties -l`
+
 
 LinkBench Overview
 ====================
