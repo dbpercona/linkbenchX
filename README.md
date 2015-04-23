@@ -11,15 +11,15 @@ The difference from the LinkBench is:
 Cheatsheet How To Use
 ----------------------
 
-1. Prepare a config file: make copy or edit  `config/LinkConfigMysql.properties` 
-2. Create database `linkdb`
-3. Create tables: `mysql linkdb < sql/create_innodb.sql`
-4. Load data: `./bin/linkbench -c config/LinkConfigMysql.properties -l`
-5. Run test with parameters in `config/LinkConfigMysql.properties`: 
+* Prepare a config file: make copy or edit  `config/LinkConfigMysql.properties` 
+* Create database `linkdb`
+* Create tables: `mysql linkdb < sql/create_innodb.sql`
+* Load data: `./bin/linkbench -c config/LinkConfigMysql.properties -l`
+* Run test with parameters in `config/LinkConfigMysql.properties`: 
 ```
 bin/linkbench -r -c config/LinkConfigMysql.properties
 ```
-6. Run test with custom parameters in command line: 
+* Run test with custom parameters in command line: 
 ```
 bin/linkbench -r -c config/LinkConfigMysql.properties --csvstream res20000.csv -D requestrate=20000 -D displayfreq=5 -D dbid=linkdb
 ```
