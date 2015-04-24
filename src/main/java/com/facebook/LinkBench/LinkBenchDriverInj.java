@@ -81,6 +81,10 @@ public class LinkBenchDriverInj {
 
   /** Requests per second: <= 0 for unlimited rate */
   private static long requestrate;
+ 
+  /** Time to run benchmarks */
+  private static long maxTime;
+
 
   /** queue with generated requests */
   private static BlockingQueue<Long> genQueue;
@@ -384,6 +388,7 @@ public class LinkBenchDriverInj {
 
     Random masterRandom = createMasterRNG(props, Config.REQUEST_RANDOM_SEED);
     requestrate = ConfigUtil.getLong(props, Config.REQUEST_RATE, 0L);
+    maxTime = ConfigUtil.getLong(props, Config.MAX_TIME);
 
     genQueue = new ArrayBlockingQueue<Long>(10000); // 10000 should be in Config really. TODO
 
@@ -416,27 +421,27 @@ public class LinkBenchDriverInj {
     long requestsdone = 0;
     int abortedRequesters = 0;
     // wait for requesters
-    for (LinkBenchRequestInj requester: requesters) {
-      requestsdone += requester.getRequestsDone();
-      if (requester.didAbort()) {
-        abortedRequesters++;
-      }
-    }
+	for (LinkBenchRequestInj requester: requesters) {
+		requestsdone += requester.getRequestsDone();
+		if (requester.didAbort()) {
+			abortedRequesters++;
+		}
+	}
 
-    latencyStats.displayLatencyStats();
+	latencyStats.displayLatencyStats();
 
-    if (csvStatsFile != null) {
-      latencyStats.printCSVStats(csvStatsFile, true);
-    }
+	if (csvStatsFile != null) {
+		latencyStats.printCSVStats(csvStatsFile, true);
+	}
 
-    logger.info("REQUEST PHASE COMPLETED. " + requestsdone +
-                 " requests done in " + (benchmarkTime/1000) + " seconds." +
-                 " Requests/second = " + (1000*requestsdone)/benchmarkTime);
-    if (abortedRequesters > 0) {
-      logger.error(String.format("Benchmark did not complete cleanly: %d/%d " +
-          "request threads aborted.  See error log entries for details.",
-          abortedRequesters, nrequesters));
-    }
+	logger.info("REQUEST PHASE COMPLETED. " + requestsdone +
+			" requests done in " + (benchmarkTime/1000) + " seconds." +
+			" Requests/second = " + (1000*requestsdone)/benchmarkTime);
+	if (abortedRequesters > 0) {
+		logger.error(String.format("Benchmark did not complete cleanly: %d/%d " +
+					"request threads aborted.  See error log entries for details.",
+					abortedRequesters, nrequesters));
+	}
   }
 
   /**
@@ -481,21 +486,29 @@ public class LinkBenchDriverInj {
 	    long numRequests = ConfigUtil.getLong(props, Config.NUM_REQUESTS);
 		System.out.println("Processing Requests:"+genQueue);
 
-	    try { 
-		    for (int i=0; i< numRequests; i++) {
-			    reqTime_ns = Timer.waitExpInterval(rng, reqTime_ns, requestrate_ns);
-			    //	    System.out.println("Request time: "+System.currentTimeMillis());
-			    genQueue.put(System.nanoTime());
-		    }
+		try { 
+			long runStartTime = System.currentTimeMillis();
+			long curTime = runStartTime;
+			for (int i=0; i< numRequests; i++) {
+				
+				reqTime_ns = Timer.waitExpInterval(rng, reqTime_ns, requestrate_ns);
+				//	    System.out.println("Request time: "+System.currentTimeMillis());
+				genQueue.put(System.nanoTime());
+				curTime  = System.currentTimeMillis();
+				if (curTime > runStartTime + maxTime*1000) {
+					System.out.println("Time limit elapsed");
+					break;
+				}
+			}
 
 			// Send stop signal to all requesters
-		    for (int i=0; i< nrequesters; i++) {
-			    genQueue.put((long)0);
-		    }
-		   
-	    }       catch (Exception e) { 
-		    e.printStackTrace(); 
-	    } 
+			for (int i=0; i< nrequesters; i++) {
+				genQueue.put((long)0);
+			}
+
+		}       catch (Exception e) { 
+			e.printStackTrace(); 
+		} 
     }
 
     doneSignal.await(); // wait for all threads to finish
