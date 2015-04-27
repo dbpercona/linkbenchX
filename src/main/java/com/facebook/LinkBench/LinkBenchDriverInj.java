@@ -396,7 +396,8 @@ public class LinkBenchDriverInj {
 
     // create GlobalStats thread
 
-    Thread t = new Thread(new GlobalStats(statsQueue, props, csvStreamFile), "Global Stats Thread");
+	GlobalStats gs = new GlobalStats(statsQueue, props, csvStreamFile);
+    Thread t = new Thread(gs, "Global Stats Thread");
     t.start();
 
     // create requesters
@@ -413,6 +414,8 @@ public class LinkBenchDriverInj {
     
     // stop Thread with global statistics
     t.interrupt();
+	t.join();
+	gs.printQuantileStats();
 
     long finishTime = System.currentTimeMillis();
     // Calculate duration accounting for warmup time
@@ -427,8 +430,6 @@ public class LinkBenchDriverInj {
 			abortedRequesters++;
 		}
 	}
-
-	latencyStats.displayLatencyStats();
 
 	if (csvStatsFile != null) {
 		latencyStats.printCSVStats(csvStatsFile, true);

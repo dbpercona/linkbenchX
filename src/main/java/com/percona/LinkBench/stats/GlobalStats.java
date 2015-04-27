@@ -39,6 +39,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import com.percona.LinkBench.stats.StatMessage;
 import java.util.Collections;
 
+import com.umbrant.quantile.QuantileEstimationGK;
+
 
 
 /**
@@ -65,17 +67,8 @@ public class GlobalStats implements Runnable  {
   // Concurrency metrcis
   private ArrayList<Integer> concArray;
 
-  /** Number of operations that the sample is drawn from */
-  private int opsSinceReset[];
-
-  // minimums encounetered per operation type
-  private long minimums[];
-
-  // maximums encountered per operation type
-  private long maximums[];
-
-  // #errors encountered per type
-  private long errors[];
+  // quantile estimation for ADD_LINK op
+  private QuantileEstimationGK qADDLINK;
 
   private final Logger logger = Logger.getLogger(ConfigUtil.LINKBENCH_LOGGER);
 
@@ -103,19 +96,14 @@ public class GlobalStats implements Runnable  {
 
     concArray = new ArrayList<Integer>();
 
+    /* create quantile estimation with 0.5% accuracy */
+    qADDLINK = new QuantileEstimationGK(0.005, 500);
+
     samples = new LongArrayList[LinkStore.MAX_OPTYPES];
     for (LinkBenchOp type: LinkBenchOp.values()) {
       samples[type.ordinal()] = new LongArrayList();
     }
 
-/*
-    samples = new long[LinkStore.MAX_OPTYPES][maxsamples];
-    opsSinceReset = new int[LinkStore.MAX_OPTYPES];
-    minimums = new long[LinkStore.MAX_OPTYPES];
-    maximums = new long[LinkStore.MAX_OPTYPES];
-    numops = new long[LinkStore.MAX_OPTYPES];
-    errors = new long[LinkStore.MAX_OPTYPES];
-*/
     rng = new Random();
 
     displayFreq_ms = ConfigUtil.getLong(props, Config.DISPLAY_FREQ, 60L) * 1000;
@@ -126,15 +114,12 @@ public class GlobalStats implements Runnable  {
 	  synchronized(lockQueue) {
 		  samples[type.ordinal()].add(timetaken);
 		  concArray.add(conc);
+		  if (type == LinkBenchOp.ADD_LINK) {
+			  qADDLINK.insert(timetaken);
+		  }
 	  }
   }
 
-
-  public void resetSamples() {
-    for (LinkBenchOp type: LinkBenchOp.values()) {
-      opsSinceReset[type.ordinal()] = 0;
-    }
-  }
   /**
    * Write a header with column names for a csv file showing progress
    * @param out
@@ -189,9 +174,20 @@ public class GlobalStats implements Runnable  {
 			  }
 			  samples[type.ordinal()].clear();
 
-			  //opsSinceReset[type.ordinal()] = 0;
 		  }
 	  }
+
+  }
+
+  public void printQuantileStats() {
+
+	  double[] quantiles = { 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 1.0 };
+	  logger.info("Quantiles for ADD_LINK op:");
+	  for (double q : quantiles) {
+		  long estimate = qADDLINK.query(q);
+		  logger.info("Quantile[" + q +"]="+estimate); 
+	  }
+	  logger.info("Quantiles size= "+qADDLINK.size()); 
 
   }
 
@@ -239,6 +235,10 @@ public class GlobalStats implements Runnable  {
 		}
 	}
 	threadPrinter.interrupt();
+	try {
+	threadPrinter.join();
+	} catch (InterruptedException e) {
+    }
   }
 
 }
