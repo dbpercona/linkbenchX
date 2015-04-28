@@ -56,7 +56,7 @@ import com.umbrant.quantile.QuantileEstimationGK;
  */
 public class GlobalStats implements Runnable  {
 
-	private class LongArrayList extends ArrayList<Long>{}
+  private class LongArrayList extends ArrayList<Long>{}
 
   // Actual number of operations per type that caller did
   private long numops[];
@@ -78,6 +78,7 @@ public class GlobalStats implements Runnable  {
   /** Random number generator used to decide which to include in sample */
   private Random rng;
 
+  /** this is mutex */
   private Object lockQueue = new Object();
 
   /** Queue we use to get messages from Request thread */
@@ -85,6 +86,10 @@ public class GlobalStats implements Runnable  {
 
   /** time period to print current results */
   long displayFreq_ms;
+
+  /** initial timestamp when printer thread starts */
+  long initTimestamp = 0;
+  long prevTimestamp = 0;
 
   Properties props;
 
@@ -129,29 +134,26 @@ public class GlobalStats implements Runnable  {
             "max_us,p95_us,p99_us");
   }
 
-  /**
-   * @return total operation count so far for type
-   */
-  public long getCount(LinkBenchOp type) {
-    return this.numops[type.ordinal()];
-  }
-
   private void printStats() {
 
-      long timestamp = System.currentTimeMillis() / 1000;
+      long timestamp = System.currentTimeMillis() / 1000 - initTimestamp;
 
 	  synchronized(lockQueue) {
 
 		  int maxConc = 0;
+
 		  if (concArray.size() > 0 ) {
 			  Collections.sort(concArray);
-			  maxConc = concArray.get(Math.max(concArray.size()*99/100,1)-1);
+			  maxConc = concArray.get(Math.max(concArray.size() * 99/100, 1) - 1);
 		  }
-		  logger.info("Events: " + concArray.size()+
-				  ", 99% concurrency: "+maxConc);
+
+		  logger.info("Events: " + concArray.size()+ ", 99% concurrency: "+maxConc+", throughput: "+
+				concArray.size()/(timestamp-prevTimestamp)+" ops/sec");
+
 		  concArray.clear();
 
 		  for (LinkBenchOp type: LinkBenchOp.values()) {
+
 			  Collections.sort(samples[type.ordinal()]);
 			  long maxTime=0;
 			  long tm95th = 0;
@@ -163,8 +165,13 @@ public class GlobalStats implements Runnable  {
 				  tm99th = samples[type.ordinal()].get(Math.max(sz*99/100,1)-1);
 			  }
 			  if ( (type == LinkBenchOp.ADD_LINK) || (type == LinkBenchOp.GET_LINKS_LIST) ) {
-				  logger.info("Type: " + type.name() + ", count: " + samples[type.ordinal()].size()+
-						  ", conc: "+maxConc+", Time(us) max: "+maxTime+", 95th: "+ tm95th +", 99th: "+tm99th);
+				  logger.info("Type: " + type.name() + 
+						", count: " + samples[type.ordinal()].size()+
+						", conc: "+maxConc+
+						", Time(us) max: "+maxTime+
+						", 95th: "+ tm95th +
+						", 99th: "+tm99th);
+
 				  if (csvOutput != null) {
 					  csvOutput.println(timestamp + "," + type.name() +
 							  "," + samples[type.ordinal()].size() + "," + maxConc +
@@ -176,6 +183,7 @@ public class GlobalStats implements Runnable  {
 
 		  }
 	  }
+	  prevTimestamp = timestamp;
 
   }
 
@@ -200,12 +208,24 @@ public class GlobalStats implements Runnable  {
     /* Start subthread that prints stats */ 
     Thread threadPrinter = new Thread("Printer Thread") {
 	    public void run(){
-
+			
+			long t1 = 0;
+			long t2 = 0;
+			if (initTimestamp == 0) {
+				initTimestamp = System.currentTimeMillis() / 1000;
+				prevTimestamp = 0;
+			}
 		    try {	
 			    while ( true ) {
-				    Thread.sleep(displayFreq_ms);
+					if (displayFreq_ms > (t2 - t1)) {
+						// sleep only interval bigger than time correction
+						Thread.sleep(displayFreq_ms-(t2-t1));
+					}
+					t1 = System.currentTimeMillis();
 					printStats();
-				    //logger.info("Received message: " + timeRequest.type.displayName() + ", time: " 
+				    /* t2-t1 should contain time correction */
+					t2 = System.currentTimeMillis();
+					
 			    }
 		    } catch (InterruptedException e) {
 				printStats();
@@ -221,8 +241,6 @@ public class GlobalStats implements Runnable  {
 		// wait on incoming message
 		try {
 			StatMessage timeRequest = statsQueue.take();
-			//                        long now = System.nanoTime();
-			//                        long time = (now - t) / 1000; // Divide by 1000 to get result in microseconds
 			if (timeRequest == null ) {
 				continue;
 			}
