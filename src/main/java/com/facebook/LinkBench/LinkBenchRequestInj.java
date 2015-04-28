@@ -37,8 +37,6 @@ import com.facebook.LinkBench.distributions.ID2Chooser;
 import com.facebook.LinkBench.distributions.LogNormalDistribution;
 import com.facebook.LinkBench.distributions.ProbabilityDistribution;
 import com.facebook.LinkBench.generators.DataGenerator;
-import com.facebook.LinkBench.stats.LatencyStats;
-import com.facebook.LinkBench.stats.SampledStats;
 import com.facebook.LinkBench.util.ClassLoadUtil;
 
 import com.percona.LinkBench.stats.StatMessage;
@@ -144,9 +142,6 @@ public class LinkBenchRequestInj implements Runnable {
   // Probability distribution for ids in multiget
   ProbabilityDistribution multigetDist;
 
-  // Statistics
-  SampledStats stats;
-  LatencyStats latencyStats;
 
   // Other informational counters
   long numfound = 0;
@@ -184,7 +179,6 @@ public class LinkBenchRequestInj implements Runnable {
   public LinkBenchRequestInj(LinkStore linkStore,
                           NodeStore nodeStore,
                           Properties props,
-                          LatencyStats latencyStats,
                           PrintStream csvStreamOut,
                           RequestProgress progressTracker,
                           Random rng,
@@ -201,7 +195,6 @@ public class LinkBenchRequestInj implements Runnable {
     this.linkStore = linkStore;
     this.nodeStore = nodeStore;
     this.props = props;
-    this.latencyStats = latencyStats;
     this.progressTracker = progressTracker;
     this.rng = rng;
     this.nrequesters = nrequesters;
@@ -245,7 +238,6 @@ public class LinkBenchRequestInj implements Runnable {
 
     displayFreq_ms = ConfigUtil.getLong(props, Config.DISPLAY_FREQ, 60L) * 1000;
     int maxsamples = ConfigUtil.getInt(props, Config.MAX_STAT_SAMPLES);
-    stats = new SampledStats(requesterID, maxsamples, csvStreamOut);
 
     listTailHistoryLimit = 2048; // Hardcoded limit for now
     listTailHistory = new ArrayList<Link>(listTailHistoryLimit);
@@ -669,9 +661,8 @@ public class LinkBenchRequestInj implements Runnable {
 
 	  if (recordStats) {
 		  // record statistics
-		  stats.addStats(type, timetaken, false);
+		  //stats.addStats(type, timetaken, false);
 		  statQueue.offer(new StatMessage(timetaken, conc, type, timeInQueue_us, genQueue.size()));
-		  latencyStats.recordLatency(requesterID, type, timetaken);
 	  }
 
 	  return true;
@@ -687,7 +678,6 @@ public class LinkBenchRequestInj implements Runnable {
 		int conc = concurrency.getAndDecrement();
 
 		if (recordStats) {
-			stats.addStats(type, timetaken2, true);
 			statQueue.offer(new StatMessage(timetaken2, conc, type, timeInQueue_us, genQueue.size()));
 		}
 		linkStore.clearErrors(requesterID);
@@ -807,17 +797,6 @@ public class LinkBenchRequestInj implements Runnable {
     if (nodeStore != null && nodeStore != linkStore) {
       nodeStore.close();
     }
-  }
-
-  private void displayStats(long lastStatDisplay_ms, long now_ms) {
-    stats.displayStats(lastStatDisplay_ms, now_ms,
-        Arrays.asList(
-        LinkBenchOp.MULTIGET_LINK, LinkBenchOp.GET_LINKS_LIST,
-        LinkBenchOp.COUNT_LINK,
-        LinkBenchOp.UPDATE_LINK, LinkBenchOp.ADD_LINK,
-        LinkBenchOp.RANGE_SIZE, LinkBenchOp.ADD_NODE,
-        LinkBenchOp.UPDATE_NODE, LinkBenchOp.DELETE_NODE,
-        LinkBenchOp.GET_NODE));
   }
 
   int getLink(long id1, long link_type, long id2s[]) throws Exception {

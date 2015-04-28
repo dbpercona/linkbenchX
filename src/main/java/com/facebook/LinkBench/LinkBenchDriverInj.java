@@ -381,7 +381,6 @@ public class LinkBenchDriverInj {
       logger.info("NO REQUEST PHASE CONFIGURED. ");
       return;
     }
-    LatencyStats latencyStats = new LatencyStats(nrequesters);
     List<LinkBenchRequestInj> requesters = new LinkedList<LinkBenchRequestInj>();
 
     RequestProgress progress = LinkBenchRequestInj.createProgress(logger, props);
@@ -404,7 +403,7 @@ public class LinkBenchDriverInj {
     for (int i = 0; i < nrequesters; i++) {
       Stores stores = initStores();
       LinkBenchRequestInj l = new LinkBenchRequestInj(stores.linkStore,
-              stores.nodeStore, props, latencyStats, csvStreamFile,
+              stores.nodeStore, props, csvStreamFile,
               progress, new Random(masterRandom.nextLong()), i, nrequesters, genQueue, statsQueue);
       requesters.add(l);
     }
@@ -431,9 +430,6 @@ public class LinkBenchDriverInj {
 		}
 	}
 
-	if (csvStatsFile != null) {
-		latencyStats.printCSVStats(csvStatsFile, true);
-	}
 
 	logger.info("REQUEST PHASE COMPLETED. " + requestsdone +
 			" requests done in " + (benchmarkTime/1000) + " seconds." +

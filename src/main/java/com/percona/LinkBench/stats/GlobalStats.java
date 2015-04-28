@@ -60,6 +60,7 @@ public class GlobalStats implements Runnable  {
 private class MinMaxStat {
 	public long minValue = java.lang.Long.MAX_VALUE;
 	public long maxValue = 0;
+	public long count = 0;
    
     public MinMaxStat() {
 	}
@@ -67,11 +68,13 @@ private class MinMaxStat {
 	public void AddStat(long v) {
 		minValue = Math.min(v, minValue);	
 		maxValue = Math.max(v, maxValue);
+		count++;
 	}
 
 	public void Reset() {
 		minValue = java.lang.Long.MAX_VALUE;
 		maxValue = 0;
+		count = 0;
 	}
 }
 
@@ -80,16 +83,16 @@ private class MinMaxStat {
 // samples for various optypes
   private ArrayList<Long>[] samples;
 
-  // Concurrency metrcis
-  private ArrayList<Integer> concArray;
 
   // quantile estimation for ADD_LINK op
   private QuantileEstimationGK qADDLINK;
 
   private MinMaxStat qSizeStat = new MinMaxStat();
   private MinMaxStat timeInQueueStat = new MinMaxStat();
- 
 
+  // Concurrency metrcis
+  private MinMaxStat concStat = new MinMaxStat();
+ 
   private final Logger logger = Logger.getLogger(ConfigUtil.LINKBENCH_LOGGER);
 
   /** Stream to write csv output to ( null if no csv output ) */
@@ -119,8 +122,6 @@ private class MinMaxStat {
     this.statsQueue = statsQ;
     this.props = props;
 
-    concArray = new ArrayList<Integer>();
-
     /* create quantile estimation with 0.5% accuracy */
     qADDLINK = new QuantileEstimationGK(0.005, 500);
 
@@ -138,11 +139,18 @@ private class MinMaxStat {
   //public void addStats(LinkBenchOp type, long timetaken, boolean error, int conc) {
   public void addStats(StatMessage msg) {
 	  synchronized(lockQueue) {
-		  samples[msg.type.ordinal()].add(msg.execTime);
-		  concArray.add(msg.concurrency);
+
+		  /* collect stats only for two operations, save memory and processing time*/
+		  if ((msg.type == LinkBenchOp.ADD_LINK) || 
+				(msg.type == LinkBenchOp.GET_LINKS_LIST)) {
+			  samples[msg.type.ordinal()].add(msg.execTime);
+		  }
+
 		  if (msg.type == LinkBenchOp.ADD_LINK) {
 			  qADDLINK.insert(msg.execTime);
 		  }
+
+		  concStat.AddStat(msg.concurrency);
 		  qSizeStat.AddStat(msg.queueSize);
 		  timeInQueueStat.AddStat(msg.timeInQueue_us);
 	  }
@@ -163,21 +171,17 @@ private class MinMaxStat {
 
 	  synchronized(lockQueue) {
 
-		  int maxConc = 0;
+		  long maxConc = concStat.maxValue;
+		  long minConc = concStat.minValue;
 
-		  if (concArray.size() > 0 ) {
-			  Collections.sort(concArray);
-			  maxConc = concArray.get(Math.max(concArray.size() * 99/100, 1) - 1);
-		  }
-
-		  logger.info("Events: " + concArray.size()+ ", 99% concurrency: "+maxConc+", throughput: "+
-				concArray.size()/(timestamp-prevTimestamp)+" ops/sec");
+		  logger.info("Events: " + concStat.count+ ", concurrency (min-max): "+minConc+"-"+maxConc+", throughput: "+
+				concStat.count/(timestamp-prevTimestamp)+" ops/sec");
 		  logger.info("Queue: size min-max: " + qSizeStat.minValue+"-"+qSizeStat.maxValue+
 					", time min-max (us): " + timeInQueueStat.minValue + "-" +timeInQueueStat.maxValue);
 
-		  concArray.clear();
+		  concStat.Reset();
 
-		  for (LinkBenchOp type: LinkBenchOp.values()) {
+		  for (LinkBenchOp type: Arrays.asList(LinkBenchOp.ADD_LINK,LinkBenchOp.GET_LINKS_LIST)) {
 
 			  Collections.sort(samples[type.ordinal()]);
 			  long maxTime=0;
@@ -189,7 +193,6 @@ private class MinMaxStat {
 				  tm95th = samples[type.ordinal()].get(Math.max(sz*95/100,1)-1);
 				  tm99th = samples[type.ordinal()].get(Math.max(sz*99/100,1)-1);
 			  }
-			  if ( (type == LinkBenchOp.ADD_LINK) || (type == LinkBenchOp.GET_LINKS_LIST) ) {
 				  logger.info("Type: " + type.name() + 
 						", count: " + samples[type.ordinal()].size()+
 						", conc: "+maxConc+
@@ -203,7 +206,6 @@ private class MinMaxStat {
 							  "," + maxTime + "," + tm95th +
 							  "," + tm99th);
 				  }
-			  }
 			  samples[type.ordinal()].clear();
 
 		  }
