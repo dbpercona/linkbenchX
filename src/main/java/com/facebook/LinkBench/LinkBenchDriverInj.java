@@ -390,7 +390,7 @@ public class LinkBenchDriverInj {
     requestrate = ConfigUtil.getLong(props, Config.REQUEST_RATE, 0L);
     maxTime = ConfigUtil.getLong(props, Config.MAX_TIME);
 
-    genQueue = new ArrayBlockingQueue<Long>(10000); // 10000 should be in Config really. TODO
+    genQueue = new ArrayBlockingQueue<Long>(1000000); // 10000 should be in Config really. TODO
 
     statsQueue = new ArrayBlockingQueue<StatMessage>(1000000); // 1000000 should be in Config. TODO
 

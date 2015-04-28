@@ -43,6 +43,7 @@ import com.umbrant.quantile.QuantileEstimationGK;
 
 
 
+
 /**
  * This class is used to keep track of statistics.  It collects a sample of the
  * total data (controlled by maxsamples) and can then compute statistics based
@@ -56,12 +57,27 @@ import com.umbrant.quantile.QuantileEstimationGK;
  */
 public class GlobalStats implements Runnable  {
 
+private class MinMaxStat {
+	public long minValue = java.lang.Long.MAX_VALUE;
+	public long maxValue = 0;
+   
+    public MinMaxStat() {
+	}
+
+	public void AddStat(long v) {
+		minValue = Math.min(v, minValue);	
+		maxValue = Math.max(v, maxValue);
+	}
+
+	public void Reset() {
+		minValue = java.lang.Long.MAX_VALUE;
+		maxValue = 0;
+	}
+}
+
   private class LongArrayList extends ArrayList<Long>{}
 
-  // Actual number of operations per type that caller did
-  private long numops[];
-
-  // samples for various optypes
+// samples for various optypes
   private ArrayList<Long>[] samples;
 
   // Concurrency metrcis
@@ -69,6 +85,10 @@ public class GlobalStats implements Runnable  {
 
   // quantile estimation for ADD_LINK op
   private QuantileEstimationGK qADDLINK;
+
+  private MinMaxStat qSizeStat = new MinMaxStat();
+  private MinMaxStat timeInQueueStat = new MinMaxStat();
+ 
 
   private final Logger logger = Logger.getLogger(ConfigUtil.LINKBENCH_LOGGER);
 
@@ -115,13 +135,16 @@ public class GlobalStats implements Runnable  {
 
   }
 
-  public void addStats(LinkBenchOp type, long timetaken, boolean error, int conc) {
+  //public void addStats(LinkBenchOp type, long timetaken, boolean error, int conc) {
+  public void addStats(StatMessage msg) {
 	  synchronized(lockQueue) {
-		  samples[type.ordinal()].add(timetaken);
-		  concArray.add(conc);
-		  if (type == LinkBenchOp.ADD_LINK) {
-			  qADDLINK.insert(timetaken);
+		  samples[msg.type.ordinal()].add(msg.execTime);
+		  concArray.add(msg.concurrency);
+		  if (msg.type == LinkBenchOp.ADD_LINK) {
+			  qADDLINK.insert(msg.execTime);
 		  }
+		  qSizeStat.AddStat(msg.queueSize);
+		  timeInQueueStat.AddStat(msg.timeInQueue_us);
 	  }
   }
 
@@ -149,6 +172,8 @@ public class GlobalStats implements Runnable  {
 
 		  logger.info("Events: " + concArray.size()+ ", 99% concurrency: "+maxConc+", throughput: "+
 				concArray.size()/(timestamp-prevTimestamp)+" ops/sec");
+		  logger.info("Queue: size min-max: " + qSizeStat.minValue+"-"+qSizeStat.maxValue+
+					", time min-max (us): " + timeInQueueStat.minValue + "-" +timeInQueueStat.maxValue);
 
 		  concArray.clear();
 
@@ -182,6 +207,8 @@ public class GlobalStats implements Runnable  {
 			  samples[type.ordinal()].clear();
 
 		  }
+		  qSizeStat.Reset();
+		  timeInQueueStat.Reset();
 	  }
 	  prevTimestamp = timestamp;
 
@@ -244,7 +271,7 @@ public class GlobalStats implements Runnable  {
 			if (timeRequest == null ) {
 				continue;
 			}
-			addStats(timeRequest.type, timeRequest.execTime, false, timeRequest.concurrency);
+			addStats(timeRequest);
 			//logger.info("Received message: " + timeRequest.type.displayName() + ", time: " 
 			// 		+ timeRequest.execTime);
 		} catch (InterruptedException e) {
@@ -254,9 +281,9 @@ public class GlobalStats implements Runnable  {
 	}
 	threadPrinter.interrupt();
 	try {
-	threadPrinter.join();
+		threadPrinter.join();
 	} catch (InterruptedException e) {
-    }
+	}
   }
 
 }

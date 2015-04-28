@@ -167,6 +167,8 @@ public class LinkBenchRequestInj implements Runnable {
   long errors = 0;
   boolean aborted;
 
+  long timeInQueue_us;
+
   // Access distributions
   private AccessDistribution writeDist; // link writes
   private AccessDistribution writeDistUncorr; // to blend with link writes
@@ -668,7 +670,7 @@ public class LinkBenchRequestInj implements Runnable {
 	  if (recordStats) {
 		  // record statistics
 		  stats.addStats(type, timetaken, false);
-		  statQueue.offer(new StatMessage(timetaken, conc, type));
+		  statQueue.offer(new StatMessage(timetaken, conc, type, timeInQueue_us, genQueue.size()));
 		  latencyStats.recordLatency(requesterID, type, timetaken);
 	  }
 
@@ -686,7 +688,7 @@ public class LinkBenchRequestInj implements Runnable {
 
 		if (recordStats) {
 			stats.addStats(type, timetaken2, true);
-			statQueue.offer(new StatMessage(timetaken2, conc, type));
+			statQueue.offer(new StatMessage(timetaken2, conc, type, timeInQueue_us, genQueue.size()));
 		}
 		linkStore.clearErrors(requesterID);
 		return false;
@@ -742,7 +744,6 @@ public class LinkBenchRequestInj implements Runnable {
     long i;
 
     long warmupRequests = 0;
-    long requestsSinceLastUpdate = 0;
     long lastStatDisplay_ms = curTime;
 
 	while ( true ) {
@@ -751,6 +752,7 @@ public class LinkBenchRequestInj implements Runnable {
 		try {
 			// wait for event in queue. Events are generated in Driver
 			timeRequest = genQueue.take();
+			timeInQueue_us = (System.nanoTime()-timeRequest)/1000;
 
 		} catch (Throwable e) {
 			logger.error("Error " + e.getMessage(), e);
@@ -777,11 +779,6 @@ public class LinkBenchRequestInj implements Runnable {
 		// Track requests done
 		if (warmupDone) {
 			requestsDone++;
-			requestsSinceLastUpdate++;
-			//if (requestsSinceLastUpdate >= RequestProgress.THREAD_REPORT_INTERVAL) {
-			//  progressTracker.update(requestsSinceLastUpdate);
-			//  requestsSinceLastUpdate = 0;
-			//}
 		} else {
 			warmupRequests++;
 		}
@@ -791,7 +788,6 @@ public class LinkBenchRequestInj implements Runnable {
 			warmupDone = true;
 			lastUpdate = curTime;
 			lastStatDisplay_ms = curTime;
-			requestsSinceLastUpdate = 0;
 			logger.info(String.format("Requester #%d warmup finished " +
 						" after %d warmup requests.",
 						requesterID, warmupRequests));
