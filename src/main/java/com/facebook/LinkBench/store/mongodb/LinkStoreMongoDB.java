@@ -28,7 +28,7 @@ public class LinkStoreMongoDB extends GraphStore {
 
     @Override
     public void initialize(Properties p, Phase currentPhase, int threadId) throws IOException, Exception {
-        this.graph = new MongoDBGraph();
+        this.graph = new MongoDBGraph(p);
     }
 
     @Override

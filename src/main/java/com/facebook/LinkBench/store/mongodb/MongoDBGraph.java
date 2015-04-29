@@ -1,5 +1,6 @@
 package com.facebook.LinkBench.store.mongodb;
 
+import com.facebook.LinkBench.ConfigUtil;
 import com.facebook.LinkBench.Link;
 import com.facebook.LinkBench.Node;
 import com.mongodb.*;
@@ -8,6 +9,7 @@ import java.net.UnknownHostException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * User: felipe
@@ -15,6 +17,10 @@ import java.util.List;
  * Time: 9:07 PM
  */
 public class MongoDBGraph {
+
+    public static final String CONFIG_HOST = "host";
+    public static final String CONFIG_DBID = "dbid";
+
     public static final String NODE_COLLECTION = "node";
     public static final String LINK_COLLECTION = "link";
 
@@ -31,12 +37,15 @@ public class MongoDBGraph {
     private DBCollection nodeCollection;
     private DBCollection linkCollection;
 
+    private String host;
+    private String dbid;
 
-
-    public MongoDBGraph() throws UnknownHostException {
-        mongoClient = new MongoClient( "localhost" );
+    public MongoDBGraph(Properties props) throws UnknownHostException {
+        host=ConfigUtil.getPropertyRequired(props, CONFIG_HOST);
+        dbid=ConfigUtil.getPropertyRequired(props, CONFIG_DBID);
+        mongoClient = new MongoClient( host );
         // Executar ~/Workspace/mongodb$ bin/mongod -f mongodb.conf
-        g = mongoClient.getDB("graph-linkbench");
+        g = mongoClient.getDB( dbid );
         nodeCollection = g.getCollection(NODE_COLLECTION);
         linkCollection = g.getCollection(LINK_COLLECTION);
     }
