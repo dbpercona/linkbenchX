@@ -37,7 +37,7 @@ LinkBench is released under the Apache License, Version 2.0.
 Background
 ----------
 One way of modeling social network data is as a *social graph*, where
-entities or *nodes* such as people, posts, comments and pages are connected
+*entities* or *nodes* such as people, posts, comments and pages are connected
 by *links* which model different relationships between the nodes.  Different
 types of links can represent friendship between two users, a user liking another object,
 ownership of a post, or any relationship you like.  These nodes and links carry metadata such as
