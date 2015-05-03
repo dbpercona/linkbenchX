@@ -50,7 +50,7 @@ fi
 
 echo "Using java at: $JAVA"
 
-JAVA_HEAP_MAX=-Xmx1000m
+JAVA_HEAP_MAX="-Xms1000m -Xmx1000m"
 
 # check envvars which might override default args
 if [ "$HEAPSIZE" != "" ]; then
@@ -76,5 +76,5 @@ unset IFS
 CLASS='com.facebook.LinkBench.LinkBenchDriverInj'
 
 # run it
-exec "$JAVA" $JAVA_HEAP_MAX $OPTS $JMX_OPTS -classpath "$CLASSPATH" $CLASS \
+exec "$JAVA" -server -Xincgc $JAVA_HEAP_MAX $OPTS $JMX_OPTS -classpath "$CLASSPATH" $CLASS \
           "$@"
