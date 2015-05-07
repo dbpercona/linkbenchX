@@ -149,18 +149,23 @@ public class LinkStoreMongoDBv2 extends GraphStore {
       throw e;
     }
     
-    // initialize node id sequence
-    long lastId=0;
-    // get the max node id
-    DBCursor nodeCurr = nodeColl.
-        find().
-        sort(new BasicDBObject("id",-1)).
-        limit(1);
-    if (nodeCurr.hasNext()) {
-      lastId=(Long)nodeCurr.next().get("id");
+    // initialize node id sequence - This is necessary as MongoDB does
+    // not support integer sequences
+    synchronized (LinkStoreMongoDBv2.class) {
+      if (NodeAutoIncrement.getInstance().getLastSequence() == 0) {
+        long lastId=0;
+        // get the max node id
+        DBCursor nodeCurr = nodeColl.
+            find().
+            sort(new BasicDBObject("id",-1)).
+            limit(1);
+        if (nodeCurr.hasNext()) {
+          lastId=(Long)nodeCurr.next().get("id");
+        }
+        NodeAutoIncrement.getInstance().setNext(lastId+1);
+      }
     }
-    NodeAutoIncrement.getInstance().setNext(lastId+1);
-
+    
   }
 
   // connects to test database
@@ -1039,25 +1044,25 @@ public class LinkStoreMongoDBv2 extends GraphStore {
       logger.trace("link find:" + linkFind);
     }
 
-    int count = linkResult.count();
+    int size = linkResult.size();
 
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace("Range lookup result: " + id1 + "," + link_type +
-                         " is " + count);
+                         " is " + size);
     }
-    if (count == 0) {
+    if (size == 0) {
       return null;
     }
 
     // Fetch the link data
-    Link links[] = new Link[count];
+    Link links[] = new Link[size];
     int i = 0;
     while (linkResult.hasNext()) {
       Link l = createLinkFromRow(linkResult.next());
       links[i] = l;
       i++;
     }
-    assert(i == count);
+    assert(i == size);
     return links;
   }
 
