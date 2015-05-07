@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.LinkBench;
+package com.percona.LinkBench;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -29,6 +29,15 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.bson.types.ObjectId;
 
+import com.facebook.LinkBench.Config;
+import com.facebook.LinkBench.ConfigUtil;
+import com.facebook.LinkBench.GraphStore;
+import com.facebook.LinkBench.Link;
+import com.facebook.LinkBench.LinkCount;
+import com.facebook.LinkBench.LinkStore;
+import com.facebook.LinkBench.Node;
+import com.facebook.LinkBench.NodeAutoIncrement;
+import com.facebook.LinkBench.Phase;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
