@@ -13,6 +13,7 @@ public class NodeAutoIncrement {
   private static NodeAutoIncrement instance = new NodeAutoIncrement();
 
   private volatile long next = 1;
+  private volatile long last = 0;
 
   private NodeAutoIncrement() {
     // block instantiation
@@ -23,8 +24,13 @@ public class NodeAutoIncrement {
   }
 
   public synchronized long getNextSequence() {
-      return next++;
+      return last=next++;
   }
+
+  public synchronized long getLastSequence() {
+    return last;
+}
+  
   
   public synchronized NodeAutoIncrement setNext(long n) {
     next=n;
