@@ -34,6 +34,7 @@ public class Config {
   public static final String LINK_TABLE = "linktable";
   public static final String COUNT_TABLE = "counttable";
   public static final String NODE_TABLE = "nodetable";
+  public static final String TRANS_TABLE = "transtable";
 
   /* Control graph structure */
   public static final String LOAD_RANDOM_SEED = "load_random_seed";

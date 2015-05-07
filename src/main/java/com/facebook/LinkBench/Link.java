@@ -31,7 +31,7 @@ public class Link {
     this.time = time;
   }
 
-  Link() {
+  public Link() {
     link_type = LinkStore.DEFAULT_LINK_TYPE;
     visibility = LinkStore.VISIBILITY_DEFAULT;
   }
