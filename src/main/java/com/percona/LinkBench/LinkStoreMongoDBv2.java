@@ -511,15 +511,16 @@ public class LinkStoreMongoDBv2 extends GraphStore {
         throw new Exception(msg);
     }
 
-    // MongoDB Perform Two Phase Commits
-    // since MongoDB does not ACID compliant, this two-phase commit 
-    // transaction methodology is recommend in the MongoDB docs 
-    // http://docs.mongodb.org/manual/tutorial/perform-two-phase-commits
     BasicDBObject transObj=null;
     DBObject transInit=null;
     if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       beginTransaction(db);
     } else if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
+
+      // MongoDB Perform Two Phase Commits
+      // since MongoDB does not ACID compliant, this two-phase commit 
+      // transaction methodology is recommend in the MongoDB docs 
+      // http://docs.mongodb.org/manual/tutorial/perform-two-phase-commits
 
       // start a transaction
       transObj=new BasicDBObject();
@@ -1254,15 +1255,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace("addBulkLinks: " + links.size() + " links");
     }
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
-      beginTransaction(db);
-    }
-    // simulated no implemented for loading
     addLinksNoCount(links);
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
-      commitTransaction(db);
-    }
-    
   }
 
   @Override
@@ -1367,11 +1360,6 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   private long[] bulkAddNodesImpl(String dbid, List<Node> nodes) throws Exception {
     checkNodeTableConfigured();
 
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
-      beginTransaction(db);
-    }
-    // simulated no implemented for loading
-    
     BulkWriteOperation bulkWriteOperation = nodeColl.
         initializeUnorderedBulkOperation();
 
@@ -1389,11 +1377,6 @@ public class LinkStoreMongoDBv2 extends GraphStore {
       newIds[i++] = thisId;
     }
     BulkWriteResult nodeResult = bulkWriteOperation.execute();
-
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
-      commitTransaction(db);
-    }
-    // simulated no implemented for loading
 
     int objs=nodeResult.getInsertedCount();
     
@@ -1473,11 +1456,6 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   private boolean updateNodeImpl(String dbid, Node node) throws Exception {
     checkNodeTableConfigured();
 
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
-      beginTransaction(db);
-    }
-    // simulated no implemented for loading
-    
     BasicDBObject nodeKey = new BasicDBObject();
     nodeKey.put("id", node.id);
     nodeKey.put("type", node.type);
@@ -1490,11 +1468,6 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     WriteResult nodeRes = nodeColl.update(nodeKey, 
         new BasicDBObject("$set",nodeObj)
     );
-    
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
-      commitTransaction(db);
-    }
-    // simulated no implemented for loading
     
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace("node update:"+nodeKey+","+nodeObj);
@@ -1524,22 +1497,12 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   private boolean deleteNodeImpl(String dbid, int type, long id) throws Exception {
     checkNodeTableConfigured();
 
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
-      beginTransaction(db);
-    }
-    // simulated no implemented for loading
-    
     BasicDBObject nodeKey = new BasicDBObject();
     nodeKey.put("id", id);
     nodeKey.put("type", type);
     
     WriteResult nodeRes = nodeColl.remove(nodeKey);
 
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
-      commitTransaction(db);
-    }
-
-    // simulated no implemented for loading
     int objs = nodeRes.getN();
     
     if (objs == 0) {
