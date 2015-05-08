@@ -1159,15 +1159,15 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     }
 
     // Fetch the link data
-    Link links[] = new Link[size];
+    ArrayList<Link> aLinks = new ArrayList<Link>();
     int i = 0;
     while (linkResult.hasNext()) {
       Link l = createLinkFromRow(linkResult.next());
-      links[i] = l;
+      aLinks.add(l);
       i++;
     }
     assert(i == size);
-    return links;
+    return aLinks.toArray(new Link[aLinks.size()]);
   }
 
   private Link createLinkFromRow(DBObject dbLink) {
