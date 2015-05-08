@@ -90,7 +90,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   
   int transactionSupportLevel = DEFAULT_TRANSACTION_SUPPORT_LEVEL;
   static boolean mvccServerChecked=false;
-  boolean mvccSupported=false;
+  static boolean mvccSupported=false;
 
   private MongoClient mongoClient;
   private DB db;
@@ -220,11 +220,11 @@ public class LinkStoreMongoDBv2 extends GraphStore {
           !LinkStoreMongoDBv2.mvccServerChecked) {
         String errMsg=beginTransaction(db);
         if (errMsg==null) errMsg=commitTransaction(db);
-        mvccSupported = errMsg == null;
+        LinkStoreMongoDBv2.mvccSupported = errMsg == null;
         logger.info(String.format("Server %s MVCC transactions",mvccSupported ? "supports" : "does not support"));
         LinkStoreMongoDBv2.mvccServerChecked=true;
       } else {
-        mvccSupported=false;
+        LinkStoreMongoDBv2.mvccSupported=false;
       }
     }
     
@@ -239,7 +239,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     linkColl = getOrCreateCollection(linktable);
     nodeColl = getOrCreateCollection(nodetable);
     countColl = getOrCreateCollection(counttable);
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
       transColl = getOrCreateCollection(transtable);
     }
     
@@ -280,7 +280,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
           }}),
           new BasicDBObject("unique",true)
       );
-      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
         transColl.createIndex(
             new BasicDBObject(new LinkedHashMap<String,Object>(){{
               put("link_type",new Integer("1"));
@@ -517,9 +517,9 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     // http://docs.mongodb.org/manual/tutorial/perform-two-phase-commits
     BasicDBObject transObj=null;
     DBObject transInit=null;
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       beginTransaction(db);
-    } else if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+    } else if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
 
       // start a transaction
       transObj=new BasicDBObject();
@@ -558,7 +558,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
       BasicDBObject countKey=new BasicDBObject();
       countKey.put("id",l.id1);
       countKey.put("link_type",l.link_type);
-      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
         countKey.put("pendingTransactions",
             new BasicDBObject("$ne",transInit.get("_id"))
         );
@@ -588,7 +588,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
         countInc.put("$inc",new BasicDBObject("version",0));
       }
 
-      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
         countInc.put("$push",
             new BasicDBObject("pendingTransactions",transInit.get("_id"))
         );
@@ -607,7 +607,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
       linkKey.put("link_type", l.link_type);
       linkKey.put("id1", l.id1 );
       linkKey.put("id2", l.id2 );
-      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
         linkKey.put("pendingTransactions",
             new BasicDBObject("$ne",transInit.get("_id"))
         );
@@ -626,7 +626,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
         logger.trace("update:"+linkObj.toString());
       }
 
-      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
         BasicDBObject linkTrans=new BasicDBObject();
         linkTrans.put("$push",
             new BasicDBObject("pendingTransactions",transInit.get("_id"))
@@ -641,9 +641,9 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     }
     
     // mark transaction as committed
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       commitTransaction(db);
-    } else if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+    } else if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
       if (transInit != null) {
         BasicDBObject tid=new BasicDBObject("_id",transInit.get("_id"));
         BasicDBObject tstate=new BasicDBObject();
@@ -825,14 +825,13 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     linkKey.put("id2", id2);
     
     
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       beginTransaction(db);
-    } else if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+    } else if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
       linkKey.put("pendingTransactions", new BasicDBObject(
-                    "$eq", new BasicDBObject(
                         "$size", 0
                      )
-      ));
+      );
     }
 
     BasicDBObject transObj=null;
@@ -840,7 +839,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     BasicDBObject tid=null;
     BasicDBObject tstate=null;
     
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
 
       // start a transaction
       transObj=new BasicDBObject();
@@ -905,7 +904,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
             new BasicDBObject("visibility",VISIBILITY_HIDDEN)
         );
         // add pending transaction to link
-        if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+        if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
           linkUpd.put("$push",
               new BasicDBObject("pendingTransactions",transInit.get("_id"))
           );
@@ -957,6 +956,12 @@ public class LinkStoreMongoDBv2 extends GraphStore {
         countMod.put("$inc",new BasicDBObject("count",0));
         countMod.put("$inc",new BasicDBObject("version",0));
       }
+      // add transaction
+      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
+        countObj.put("$push",
+            new BasicDBObject("pendingTransactions",transInit.get("_id"))
+        );
+      }      
       WriteResult countDec=countColl.update(countKey, countMod);
       if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
         logger.trace("count dec:"+countDec);
@@ -971,38 +976,12 @@ public class LinkStoreMongoDBv2 extends GraphStore {
           logger.trace("update:"+countFix);
         }
       }
-      
-      DBObject countCurr=countColl.findOne(countKey);
-      if (countCurr == null) {
-        // insert
-        countObj.put("count",0);
-        countColl.insert(countObj);
-        countId=countObj.getObjectId("_id");
-        if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
-          logger.trace("insert:"+countObj);
-        }
-      } else {
-        // update
-        int count=0;
-        try {
-          Integer.parseInt(countCurr.get("count").toString());
-        } catch (Exception e) {} // just leave it zero
-        countCurr.put("count", count == 0 ? count : count - 1);
-        countColl.update(countKey, countCurr);
-        countId=(ObjectId)countObj.get("_id");
-      }
-      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
-        countObj.put("$push",
-            new BasicDBObject("pendingTransactions",transInit.get("_id"))
-        );
-      }
-      
     }
 
     // commit the transaction
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       commitTransaction(db);
-    } else if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !mvccSupported) {
+    } else if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
       // mark transaction as committed
       if (transInit != null) {
         tstate.put("$set",new BasicDBObject("state","committed"));
@@ -1237,7 +1216,9 @@ public class LinkStoreMongoDBv2 extends GraphStore {
       }
 
       found = true;
-      count = ((Long)countResult.next().get("count")).longValue();
+      DBObject countObj=countResult.next();
+      Long lCount=((Long)countObj.get("count"));
+      count = lCount != null ? lCount.longValue() : 0L;
     }
 
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
@@ -1273,12 +1254,12 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace("addBulkLinks: " + links.size() + " links");
     }
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       beginTransaction(db);
     }
     // simulated no implemented for loading
     addLinksNoCount(links);
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       commitTransaction(db);
     }
     
@@ -1386,7 +1367,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   private long[] bulkAddNodesImpl(String dbid, List<Node> nodes) throws Exception {
     checkNodeTableConfigured();
 
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       beginTransaction(db);
     }
     // simulated no implemented for loading
@@ -1409,7 +1390,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     }
     BulkWriteResult nodeResult = bulkWriteOperation.execute();
 
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       commitTransaction(db);
     }
     // simulated no implemented for loading
@@ -1492,7 +1473,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   private boolean updateNodeImpl(String dbid, Node node) throws Exception {
     checkNodeTableConfigured();
 
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       beginTransaction(db);
     }
     // simulated no implemented for loading
@@ -1510,7 +1491,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
         new BasicDBObject("$set",nodeObj)
     );
     
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       commitTransaction(db);
     }
     // simulated no implemented for loading
@@ -1543,7 +1524,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   private boolean deleteNodeImpl(String dbid, int type, long id) throws Exception {
     checkNodeTableConfigured();
 
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       beginTransaction(db);
     }
     // simulated no implemented for loading
@@ -1554,7 +1535,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     
     WriteResult nodeRes = nodeColl.remove(nodeKey);
 
-    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && mvccSupported) {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
       commitTransaction(db);
     }
 
