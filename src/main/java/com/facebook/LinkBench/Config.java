@@ -75,6 +75,12 @@ public class Config {
   public static final String NUM_REQUESTERS = "requesters";
   public static final String REQUEST_RANDOM_SEED = "request_random_seed";
 
+  // 0=No Transactions, 1=Database MVCC transaction support, 2=Simulated Transactions 
+  public static final String TRANSACTION_SUPPORT_LEVEL = "transaction_support_level";
+  public static final int TRANSACTION_SUPPORT_LEVEL_NONE = 0;
+  public static final int TRANSACTION_SUPPORT_LEVEL_MVCC = 1;
+  public static final int TRANSACTION_SUPPORT_LEVEL_SIMULATED = 2;
+
   // Distribution of accesses to IDs
   public static final String READ_CONFIG_PREFIX = "read_";
   public static final String WRITE_CONFIG_PREFIX = "write_";
