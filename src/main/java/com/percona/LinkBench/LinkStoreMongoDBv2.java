@@ -63,6 +63,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   public static final String CONFIG_PORT = "port";
   public static final String CONFIG_USER = "user";
   public static final String CONFIG_PASSWORD = "password";
+  public static final String CONFIG_CONNECTION_OPTIONS = "connection_options";
   public static final String CONFIG_BULK_INSERT_BATCH = "mongo_bulk_insert_batch";
 
   public static final int DEFAULT_BULKINSERT_SIZE = 1024;
@@ -84,6 +85,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   String user;
   String pwd;
   String port;
+  String connectionOptions;
   String defaultDB;
 
   Level debuglevel;
@@ -137,6 +139,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     user = ConfigUtil.getPropertyRequired(props, CONFIG_USER);
     pwd = ConfigUtil.getPropertyRequired(props, CONFIG_PASSWORD);
     port = props.getProperty(CONFIG_PORT);
+    connectionOptions = props.getProperty(CONFIG_CONNECTION_OPTIONS);
     defaultDB = ConfigUtil.getPropertyRequired(props, Config.DBID);
 
     if (port == null || port.equals("")) port = "3306"; //use default port
@@ -198,6 +201,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     mongoUri.append("/");
     if (defaultDB != null && !"".equals(defaultDB.trim()))
       mongoUri.append(defaultDB);
+    if (connectionOptions != null &&
+        !"".equals(connectionOptions.trim())) {
+      mongoUri.append("?"+connectionOptions);
+    }
     
     /* Fix for failing connections at high concurrency, 
      * short random delay for each */
