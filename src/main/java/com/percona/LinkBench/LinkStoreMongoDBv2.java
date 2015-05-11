@@ -1026,8 +1026,14 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   @Override
   public boolean updateLink(String dbid, Link l, boolean noinverse)
     throws Exception {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      beginTransaction(db);
+    }
     // Retry logic is in addLink
     boolean added = addLink(dbid, l, noinverse);
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      commitTransaction(db);
+    }
     return !added; // return true if updated instead of added
   }
 
@@ -1073,6 +1079,9 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   private Link[] multigetLinksImpl(String dbid, long id1, long link_type,
                                 long[] id2s) throws Exception {
 
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      beginTransaction(db);
+    }
     BasicDBObject linkFind=new BasicDBObject();
     linkFind.put("id1", id1);
     linkFind.put("link_type", link_type);
@@ -1099,6 +1108,9 @@ public class LinkStoreMongoDBv2 extends GraphStore {
                   l.id2 + " found");
       }
       results[i++] = l;
+    }
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      commitTransaction(db);
     }
     return results;
   }
@@ -1132,6 +1144,9 @@ public class LinkStoreMongoDBv2 extends GraphStore {
         long minTimestamp, long maxTimestamp,
         int offset, int limit)
             throws Exception {
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      beginTransaction(db);
+    }
     
     BasicDBObject linkFind = new BasicDBObject();
     linkFind.put("id1", id1);
@@ -1156,6 +1171,9 @@ public class LinkStoreMongoDBv2 extends GraphStore {
                          " is " + size);
     }
     if (size == 0) {
+      if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+        commitTransaction(db);
+      }
       return null;
     }
 
@@ -1168,6 +1186,9 @@ public class LinkStoreMongoDBv2 extends GraphStore {
       i++;
     }
     assert(i == size);
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      commitTransaction(db);
+    }
     return aLinks.toArray(new Link[aLinks.size()]);
   }
 
@@ -1201,6 +1222,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   private long countLinksImpl(String dbid, long id1, long link_type)
         throws Exception {
     long count = 0;
+
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      beginTransaction(db);
+    }
     
     BasicDBObject countFind=new BasicDBObject();
     countFind.put("id",id1);
@@ -1227,6 +1252,9 @@ public class LinkStoreMongoDBv2 extends GraphStore {
                          " is " + found + " and " + count);
     }
 
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      commitTransaction(db);
+    }
     return count;
   }
 
@@ -1255,7 +1283,13 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace("addBulkLinks: " + links.size() + " links");
     }
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      beginTransaction(db);
+    }
     addLinksNoCount(links);
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      commitTransaction(db);
+    }
   }
 
   @Override
@@ -1281,6 +1315,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     if (counts.size() == 0)
       return;
 
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      beginTransaction(db);
+    }
+    
     BulkWriteOperation bulkCounts = countColl.initializeUnorderedBulkOperation();
     
     for (LinkCount count : counts) {
@@ -1304,6 +1342,11 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     }
     
     BulkWriteResult result=bulkCounts.execute();
+    
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      commitTransaction(db);
+    }
+    
     
     if (Level.TRACE.isGreaterOrEqual(debuglevel)) {
       logger.trace("bulk counts:"+result);
@@ -1360,6 +1403,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   private long[] bulkAddNodesImpl(String dbid, List<Node> nodes) throws Exception {
     checkNodeTableConfigured();
 
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      beginTransaction(db);
+    }
+    
     BulkWriteOperation bulkWriteOperation = nodeColl.
         initializeUnorderedBulkOperation();
 
@@ -1393,6 +1440,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
       throw new Exception("Wrong number of inserted objects: "
           + " expected " + nodes.size() + " actual " + i);
     }
+
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      commitTransaction(db);
+    }
     
     return newIds;
   }
@@ -1412,6 +1463,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
 
   private Node getNodeImpl(String dbid, int type, long id) throws Exception {
     checkNodeTableConfigured();
+
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      beginTransaction(db);
+    }
     
     BasicDBObject nodeKey = new BasicDBObject();
     nodeKey.put("id", id);
@@ -1435,6 +1490,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     
     assert(nodeCurr.hasNext() == false);
 
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      commitTransaction(db);
+    }
+    
     if (res ==null || res.type != type)
       return null;
     return res;
@@ -1456,6 +1515,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   private boolean updateNodeImpl(String dbid, Node node) throws Exception {
     checkNodeTableConfigured();
 
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      beginTransaction(db);
+    }
+    
     BasicDBObject nodeKey = new BasicDBObject();
     nodeKey.put("id", node.id);
     nodeKey.put("type", node.type);
@@ -1475,6 +1538,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
 
     int objs = nodeRes.getN();
 
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      commitTransaction(db);
+    }
+    
     if (objs == 1) return true;
     else if (objs == 0) return false;
     else throw new Exception("Did not expect " + objs +  "affected objects: only "
@@ -1497,6 +1564,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
   private boolean deleteNodeImpl(String dbid, int type, long id) throws Exception {
     checkNodeTableConfigured();
 
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      beginTransaction(db);
+    }
+    
     BasicDBObject nodeKey = new BasicDBObject();
     nodeKey.put("id", id);
     nodeKey.put("type", type);
@@ -1504,6 +1575,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     WriteResult nodeRes = nodeColl.remove(nodeKey);
 
     int objs = nodeRes.getN();
+
+    if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_MVCC && LinkStoreMongoDBv2.mvccSupported) {
+      commitTransaction(db);
+    }
     
     if (objs == 0) {
       return false;
