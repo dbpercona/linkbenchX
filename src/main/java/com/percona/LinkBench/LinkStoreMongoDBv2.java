@@ -1152,8 +1152,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     linkFind.put("id1", id1);
     linkFind.put("link_type", link_type);
     linkFind.put("visibility", LinkStore.VISIBILITY_DEFAULT);
-    linkFind.put("time", new BasicDBObject("$gte", minTimestamp));
-    linkFind.put("time", new BasicDBObject("$lte", maxTimestamp));
+    BasicDBObject timeRange=new BasicDBObject();
+    timeRange.put("$gte", minTimestamp);
+    timeRange.put("$lte", maxTimestamp);
+    linkFind.put("time", timeRange);
     
     DBCursor linkResult=linkColl.find(linkFind).
       sort(new BasicDBObject("time",-1)).
