@@ -134,7 +134,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     connectionOptions = props.getProperty(CONFIG_CONNECTION_OPTIONS);
     defaultDB = ConfigUtil.getPropertyRequired(props, Config.DBID);
 
-    if (port == null || port.equals("")) port = "3306"; //use default port
+    if (port == null || port.equals("")) port = "27017"; //use default port
     debuglevel = ConfigUtil.getDebugLevel(props);
     phase = currentPhase;
 
