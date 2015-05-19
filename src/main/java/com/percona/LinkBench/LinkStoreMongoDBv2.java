@@ -29,7 +29,6 @@ import com.facebook.LinkBench.Link;
 import com.facebook.LinkBench.LinkCount;
 import com.facebook.LinkBench.LinkStore;
 import com.facebook.LinkBench.Node;
-import com.facebook.LinkBench.NodeAutoIncrement;
 import com.facebook.LinkBench.Phase;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBList;
@@ -135,7 +134,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     connectionOptions = props.getProperty(CONFIG_CONNECTION_OPTIONS);
     defaultDB = ConfigUtil.getPropertyRequired(props, Config.DBID);
 
-    if (port == null || port.equals("")) port = "3306"; //use default port
+    if (port == null || port.equals("")) port = "27017"; //use default port
     debuglevel = ConfigUtil.getDebugLevel(props);
     phase = currentPhase;
 
@@ -165,10 +164,10 @@ public class LinkStoreMongoDBv2 extends GraphStore {
         // get the max node id
         DBCursor nodeCurr = nodeColl.
             find().
-            sort(new BasicDBObject("id",-1)).
+            sort(new BasicDBObject("_id",-1)).
             limit(1);
         if (nodeCurr.hasNext()) {
-          lastId=(Long)nodeCurr.next().get("id");
+          lastId=(Long)nodeCurr.next().get("_id");
         }
         NodeAutoIncrement.getInstance().setNext(lastId+1);
       }
@@ -264,19 +263,12 @@ public class LinkStoreMongoDBv2 extends GraphStore {
             put("id2",new Integer("1"));
             put("version",new Integer("1"));
             put("data",new Integer("1"));
-          }}),
-          new BasicDBObject("unique",true)
+          }})
       );
       countColl.createIndex(
           new BasicDBObject(new LinkedHashMap<String,Object>(){{
             put("id",new Integer("1"));
             put("link_type",new Integer("1"));
-          }}),
-          new BasicDBObject("unique",true)
-      );
-      nodeColl.createIndex(
-          new BasicDBObject(new LinkedHashMap<String,Object>(){{
-            put("id",new Integer("1"));
           }}),
           new BasicDBObject("unique",true)
       );
@@ -1417,7 +1409,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     for (Node node : nodes) {
       BasicDBObject nodeObj=new BasicDBObject();
       long thisId=NodeAutoIncrement.getInstance().getNextSequence();
-      nodeObj.put("id", thisId);
+      nodeObj.put("_id", thisId);
       nodeObj.put("type",node.type);
       nodeObj.put("version",node.version);
       nodeObj.put("time",node.time);
@@ -1471,7 +1463,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     }
     
     BasicDBObject nodeKey = new BasicDBObject();
-    nodeKey.put("id", id);
+    nodeKey.put("_id", id);
     
     DBCursor nodeCurr = nodeColl.find(nodeKey);
     
@@ -1483,7 +1475,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     if (nodeCurr.hasNext()) {
       DBObject nodeObj=nodeCurr.next();
       res = new Node(
-          ((Long)nodeObj.get("id")).longValue(), 
+          ((Long)nodeObj.get("_id")).longValue(), 
           ((Integer)nodeObj.get("type")).intValue(), 
           ((Long)nodeObj.get("version")).longValue(), 
           ((Integer)nodeObj.get("time")).intValue(), 
@@ -1522,7 +1514,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     }
     
     BasicDBObject nodeKey = new BasicDBObject();
-    nodeKey.put("id", node.id);
+    nodeKey.put("_id", node.id);
     nodeKey.put("type", node.type);
     
     BasicDBObject nodeObj=new BasicDBObject();
@@ -1571,7 +1563,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     }
     
     BasicDBObject nodeKey = new BasicDBObject();
-    nodeKey.put("id", id);
+    nodeKey.put("_id", id);
     nodeKey.put("type", type);
     
     WriteResult nodeRes = nodeColl.remove(nodeKey);
