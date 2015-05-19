@@ -263,8 +263,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
             put("id2",new Integer("1"));
             put("version",new Integer("1"));
             put("data",new Integer("1"));
-          }}),
-          new BasicDBObject("unique",true)
+          }})
       );
       countColl.createIndex(
           new BasicDBObject(new LinkedHashMap<String,Object>(){{
