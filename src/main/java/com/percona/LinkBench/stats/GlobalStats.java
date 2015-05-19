@@ -114,6 +114,8 @@ private class MinMaxStat {
   long initTimestamp = 0;
   long prevTimestamp = 0;
 
+  long opsFromStart = 0;
+
   Properties props;
 
   public GlobalStats(BlockingQueue<StatMessage> statsQ, Properties props, PrintStream csvOutput) {
@@ -161,7 +163,7 @@ private class MinMaxStat {
    * @param out
    */
   public static void writeCSVHeader(PrintStream out) {
-    out.println("timestamp,op,totalops,concurrency,queue_size," +
+    out.println("timestamp,totalops,op,ops,concurrency,queue_size," +
             "max_us,p95_us,p99_us");
   }
 
@@ -179,6 +181,7 @@ private class MinMaxStat {
 		  logger.info("Queue: size min-max: " + qSizeStat.minValue+"-"+qSizeStat.maxValue+
 					", time min-max (us): " + timeInQueueStat.minValue + "-" +timeInQueueStat.maxValue);
 
+		  opsFromStart += concStat.count;
 		  concStat.Reset();
 
 		  for (LinkBenchOp type: Arrays.asList(LinkBenchOp.ADD_LINK,LinkBenchOp.GET_LINKS_LIST)) {
@@ -202,7 +205,9 @@ private class MinMaxStat {
 						", 99th: "+tm99th);
 
 				  if (csvOutput != null) {
-					  csvOutput.println(timestamp + "," + type.name() +
+					  csvOutput.println(timestamp + 
+							  "," + opsFromStart +
+							  "," + type.name() +
 							  "," + samples[type.ordinal()].size() + "," + maxConc +
 							  "," + qSizeStat.maxValue +
 							  "," + maxTime + "," + tm95th +
