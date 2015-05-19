@@ -29,7 +29,6 @@ import com.facebook.LinkBench.Link;
 import com.facebook.LinkBench.LinkCount;
 import com.facebook.LinkBench.LinkStore;
 import com.facebook.LinkBench.Node;
-import com.facebook.LinkBench.NodeAutoIncrement;
 import com.facebook.LinkBench.Phase;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBList;

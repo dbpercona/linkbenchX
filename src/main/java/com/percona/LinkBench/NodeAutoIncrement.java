@@ -1,4 +1,4 @@
-package com.facebook.LinkBench;
+package com.percona.LinkBench;
 
 /**
  * This is a singleton sequence generator for databases that
