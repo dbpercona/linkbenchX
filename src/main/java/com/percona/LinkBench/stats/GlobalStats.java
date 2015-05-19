@@ -161,7 +161,7 @@ private class MinMaxStat {
    * @param out
    */
   public static void writeCSVHeader(PrintStream out) {
-    out.println("timestamp,op,totalops,concurrency," +
+    out.println("timestamp,op,totalops,concurrency,queue_size," +
             "max_us,p95_us,p99_us");
   }
 
@@ -196,6 +196,7 @@ private class MinMaxStat {
 				  logger.info("Type: " + type.name() + 
 						", count: " + samples[type.ordinal()].size()+
 						", conc: "+maxConc+
+						", qsize: "+qSizeStat.maxValue+
 						", Time(us) max: "+maxTime+
 						", 95th: "+ tm95th +
 						", 99th: "+tm99th);
@@ -203,6 +204,7 @@ private class MinMaxStat {
 				  if (csvOutput != null) {
 					  csvOutput.println(timestamp + "," + type.name() +
 							  "," + samples[type.ordinal()].size() + "," + maxConc +
+							  "," + qSizeStat.maxValue +
 							  "," + maxTime + "," + tm95th +
 							  "," + tm99th);
 				  }
