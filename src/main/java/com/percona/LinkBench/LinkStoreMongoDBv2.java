@@ -578,7 +578,6 @@ public class LinkStoreMongoDBv2 extends GraphStore {
       } else {
         // was insert
         countInc.put("$inc",new BasicDBObject("count",base_count));
-        countInc.put("$inc",new BasicDBObject("version",0));
       }
 
       if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
