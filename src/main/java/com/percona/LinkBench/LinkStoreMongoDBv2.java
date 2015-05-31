@@ -539,7 +539,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
     }
     
     if (update_count != 0) {
-      int base_count = update_count < 0 ? 0 : 1;
+      long base_count = update_count < 0 ? 0 : 1;
       // query to update counttable
       // if (id, link_type) is not there yet, add a new record with count = 1
       // The update happens atomically, with the latest count and version
@@ -950,7 +950,7 @@ public class LinkStoreMongoDBv2 extends GraphStore {
       }
       // add transaction
       if (transactionSupportLevel >= Config.TRANSACTION_SUPPORT_LEVEL_SIMULATED && !LinkStoreMongoDBv2.mvccSupported) {
-        countObj.put("$push",
+        countMod.put("$push",
             new BasicDBObject("pendingTransactions",transInit.get("_id"))
         );
       }      
@@ -968,6 +968,15 @@ public class LinkStoreMongoDBv2 extends GraphStore {
           logger.trace("update:"+countFix);
         }
       }
+      // get the object id
+      countKey=new BasicDBObject();
+      countKey.put("id", id1);
+      countKey.put("link_type",link_type);
+      countObj=(BasicDBObject)countColl.findOne(countKey);
+      if (countObj != null) {
+        countId=countObj.getObjectId("_id");
+      }
+
     }
 
     // commit the transaction
