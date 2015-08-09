@@ -8,8 +8,8 @@
 
 # install dependencies
 
-sudo apt update
-sudo apt install -y wget git openjdk-7-jdk maven
+sudo apt-get -y update
+sudo apt-get install -y wget git openjdk-7-jdk maven
 
 # make sure we have everything we need
 
