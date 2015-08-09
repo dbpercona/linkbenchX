@@ -31,6 +31,6 @@ fi
 # download and build linkbenchX
 
 cd ~
-git clone https://github.com/vadimtk/linkbenchX.git
+git clone https://github.com/Percona-Lab/linkbenchX.git
 cd linkbenchX
 mvn clean package -DskipTests
